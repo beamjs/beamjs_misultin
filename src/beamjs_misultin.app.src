@@ -1,0 +1,12 @@
+{application, beamjs_misultin,
+ [
+  {description, "Beam.JS binding for misultin framework"},
+  {vsn, "0.1"},
+  {registered, []},
+  {modules, [beamjs_misultin,beamjs_misultin]},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {env, []}
+ ]}.
