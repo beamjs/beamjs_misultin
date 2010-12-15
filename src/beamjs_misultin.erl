@@ -29,5 +29,18 @@ listen(_Script, #erlv8_fun_invocation{ this = This } = _Invocation, Port) ->
 
 handle_http(This,Req) ->
 	F = proplists:get_value("_callback",This),
-	F:call().
-	
+	F:call([Req,resp_object(Req)]).
+
+resp_object(Req) ->
+	[
+	 {"writeHead", fun (_Script,#erlv8_fun_invocation{ this = _This } = _Invocation, Code, Headers) ->
+						   Req:stream(head, Code, Headers),
+						   undefined
+				   end},
+	 {"end", fun (_Script,#erlv8_fun_invocation{ this = _This } = _Invocation, String) ->
+					 Req:stream(String),
+					 Req:stream(close),
+					 undefined
+				   end}
+	 ].
+						   
