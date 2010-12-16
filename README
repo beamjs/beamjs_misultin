@@ -1,7 +1,7 @@
 How to use it:
 
 $ rlwrap ./beamjs -pa ../beamjs_misultin/ebin -pa ../beamjs_misultin/deps/misultin/ebin/ -mod http beamjs_misultin 
-beam.js> require('http').createServer(function() { require('sys').print('Yes, yes, yes'); }).listen(9001)
-{"port":9001}
+beam.js> require('http').createServer(function (request, response) {  response.writeHead(200, {'Content-Type': 'text/plain'}); response.end('Hello World\n');}).listen(8124);
+{"port":8124}
 
 ... done!
