@@ -11,10 +11,10 @@
 exports() ->
 	[{"createServer", fun create_server/3}].
 
-create_server(_Script, #erlv8_fun_invocation{} = _Invocation, Fun) ->
+create_server(_Script, #erlv8_fun_invocation{} = _Invocation, [Fun]) ->
 	[{"_callback", Fun},{"listen", fun listen/3}].
 
-listen(_Script, #erlv8_fun_invocation{ this = This } = _Invocation, Port) ->
+listen(_Script, #erlv8_fun_invocation{ this = This } = _Invocation, [Port]) ->
 	case lists:keyfind(misultin,1,application:loaded_applications()) of
 		{misultin, _, _} ->
 			ignore;
@@ -33,11 +33,11 @@ handle_http(This,Req) ->
 
 resp_object(Req) ->
 	[
-	 {"writeHead", fun (_Script,#erlv8_fun_invocation{ this = _This } = _Invocation, Code, Headers) ->
+	 {"writeHead", fun (_Script,#erlv8_fun_invocation{ this = _This } = _Invocation, [Code, Headers]) ->
 						   Req:stream(head, Code, Headers),
 						   undefined
 				   end},
-	 {"end", fun (_Script,#erlv8_fun_invocation{ this = _This } = _Invocation, String) ->
+	 {"end", fun (_Script,#erlv8_fun_invocation{ this = _This } = _Invocation, [String]) ->
 					 Req:stream(String),
 					 Req:stream(close),
 					 undefined
