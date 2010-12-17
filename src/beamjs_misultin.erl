@@ -37,10 +37,19 @@ resp_object(Req) ->
 						   Req:stream(head, Code, Headers),
 						   undefined
 				   end},
+	 {"write", fun (_Script,#erlv8_fun_invocation{ this = _This } = _Invocation, [String]) ->
+					 Req:stream(String),
+					 undefined
+				   end},
 	 {"end", fun (_Script,#erlv8_fun_invocation{ this = _This } = _Invocation, [String]) ->
 					 Req:stream(String),
 					 Req:stream(close),
 					 undefined
+				   end},
+	 {"end", fun (_Script,#erlv8_fun_invocation{ this = _This } = _Invocation, []) ->
+					 Req:stream(close),
+					 undefined
 				   end}
+
 	 ].
 						   
