@@ -7,7 +7,7 @@
 		  holder,
 		  this,
 		  ref,
-		  server
+		  vm
 		 }).
 
 exports() ->
