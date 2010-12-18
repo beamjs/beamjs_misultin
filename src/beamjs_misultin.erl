@@ -1,5 +1,5 @@
 -module(beamjs_misultin).
--export([exports/0]).
+-export([exports/0,init/1]).
 
 %% TODO: do something about it, it is a copy from erlv8
 -record(erlv8_fun_invocation, {
@@ -9,6 +9,9 @@
 		  ref,
 		  vm
 		 }).
+
+init(_VM) ->
+	ok.
 
 exports() ->
 	erlv8_object:new([{"createServer", fun create_server/2}]).
