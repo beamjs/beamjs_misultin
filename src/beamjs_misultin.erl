@@ -37,9 +37,10 @@ handle_http(This,Req) ->
 	F:call([req_object(Req),resp_object(Req)]).
 
 req_object(Req) ->
+	{abs_path, Path} = Req:get(uri),
 	erlv8_object:new([
 					  {"method",Req:get(method)},
-					  {"url",Req:get(uri)},
+					  {"path",Path},
 					  {"headers",Req:get(headers)}
 					 ]).
 
