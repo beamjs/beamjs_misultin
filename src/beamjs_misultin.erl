@@ -16,8 +16,28 @@ init(_VM) ->
 exports(_VM) ->
 	erlv8_object:new([{"createServer", fun create_server/2}]).
 
-create_server(#erlv8_fun_invocation{} = _Invocation, [Fun]) ->
-	erlv8_object:new([{"_callback", Fun},{"listen", fun listen/2}]).
+create_server(#erlv8_fun_invocation{ vm = VM} = I, [Fun]) ->
+	Obj = erlv8_vm:taint(VM, erlv8_object:new([{"listen", fun listen/2}])),
+
+	Global = I:global(),
+	Require = Global:get_value("require"),
+	EventsMod = Require:call(["events"]),
+	EventEmitterCtor = EventsMod:get_value("EventEmitter"),
+
+	EventEmitterCtor:call(Obj,[]),
+
+	Prototype = Obj:get_prototype(),
+	Prototype:set_prototype(beamjs_mod_events:prototype_EventEmitter()), %% FIXME?
+
+	On = Obj:get_value("on"),
+
+	Fun1 = fun(#erlv8_fun_invocation{},[Self, Request, Response]) ->
+				   Fun:call([Request, Response]),
+				   Self ! ok
+		   end,
+
+	Obj:call(On,["request", Fun1]),
+	Obj.
 
 listen(#erlv8_fun_invocation{ this = This } = _Invocation, [Port]) ->
 	case lists:keyfind(misultin,1,application:loaded_applications()) of
@@ -33,8 +53,14 @@ listen(#erlv8_fun_invocation{ this = This } = _Invocation, [Port]) ->
 	erlv8_object:new([{port, Port}]).
 
 handle_http(This,Req) ->
-	F = This:get_value("_callback"),
-	F:call([req_object(Req),resp_object(Req)]).
+	Emit = This:get_value("emit"),
+	This:call(Emit,["request",self(),req_object(Req),resp_object(Req)]),
+	receive
+		ok ->
+			ok
+	end.
+
+
 
 req_object(Req) ->
 	{abs_path, Path} = Req:get(uri),
