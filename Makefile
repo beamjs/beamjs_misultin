@@ -4,6 +4,7 @@ deps:
 	@./rebar get-deps
 
 compile:
+	@cd deps/misultin && ../../rebar compile
 	@./rebar compile skip_deps=true
 
 clean:
