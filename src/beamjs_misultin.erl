@@ -1,14 +1,7 @@
 -module(beamjs_misultin).
 -export([exports/1,init/1]).
 
-%% TODO: do something about it, it is a copy from erlv8
--record(erlv8_fun_invocation, {
-		  is_construct_call = false,
-		  holder,
-		  this,
-		  ref,
-		  vm
-		 }).
+-include_lib("erlv8/include/erlv8.hrl").
 
 init(_VM) ->
 	ok.

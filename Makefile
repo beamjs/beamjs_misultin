@@ -4,7 +4,7 @@ deps:
 	@./rebar get-deps
 
 compile:
-	@./rebar compile
+	@./rebar compile skip_deps=true
 
 clean:
-	@./rebar clean
+	@./rebar clean skip_deps=true
