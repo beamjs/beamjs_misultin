@@ -3,7 +3,7 @@ all: compile
 deps:
 	@./rebar get-deps
 
-compile:
+compile: deps
 	@cd deps/misultin && ../../rebar compile
 	@./rebar compile skip_deps=true
 
