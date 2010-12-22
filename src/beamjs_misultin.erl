@@ -3,6 +3,8 @@
 
 -include_lib("erlv8/include/erlv8.hrl").
 
+-define(TIMEOUT, 5000).
+
 init(_VM) ->
 	ok.
 
@@ -51,6 +53,8 @@ handle_http(This,Req) ->
 	receive
 		ok ->
 			ok
+	after ?TIMEOUT ->
+			Req:stream(close)
 	end.
 
 
