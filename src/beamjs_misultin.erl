@@ -19,10 +19,9 @@ create_server(#erlv8_fun_invocation{ vm = VM} = I, [Fun]) ->
 	EventsMod = Require:call(["events"]),
 	EventEmitterCtor = EventsMod:get_value("EventEmitter"),
 
-	EventEmitterCtor:call(Obj,[]),
+	Obj:set_prototype(beamjs_mod_events:prototype_EventEmitter()), %% FIXME?
 
-	Prototype = Obj:get_prototype(),
-	Prototype:set_prototype(beamjs_mod_events:prototype_EventEmitter()), %% FIXME?
+	EventEmitterCtor:call(Obj,[]),
 
 	On = Obj:get_value("on"),
 
