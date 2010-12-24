@@ -16,21 +16,25 @@ create_server(#erlv8_fun_invocation{ vm = VM} = I, [Fun]) ->
 
 	Global = I:global(),
 	Require = Global:get_value("require"),
-	EventsMod = Require:call(["events"]),
-	EventEmitterCtor = EventsMod:get_value("EventEmitter"),
+	GenEventMod = Require:call(["gen_event"]),
+	ManagerCtor = GenEventMod:get_value("Manager"),
 
-	Obj:set_prototype(beamjs_mod_events:prototype_EventEmitter()), %% FIXME?
+	Obj:set_prototype(ManagerCtor:get_value("prototype")),
 
-	EventEmitterCtor:call(Obj,[]),
+	ManagerCtor:call(Obj,[]),
 
-	On = Obj:get_value("on"),
+	AddHandler = Obj:get_value("addHandler"),
 
-	Fun1 = fun(#erlv8_fun_invocation{},[Self, Request, Response]) ->
+	Fun1 = fun(#erlv8_fun_invocation{},[#erlv8_array{}=A]) ->
+				   [Self, Request, Response] = A:list(),
 				   Fun:call([Request, Response]),
 				   Self ! ok
 		   end,
+	
+	HandlerCtor = GenEventMod:get_value("Handler"),
+	Handler = HandlerCtor:instantiate([Fun1]),
 
-	Obj:call(On,["request", Fun1]),
+	Obj:call(AddHandler,[Handler]),
 	Obj.
 
 listen(#erlv8_fun_invocation{ this = This } = _Invocation, [Port]) ->
@@ -47,8 +51,8 @@ listen(#erlv8_fun_invocation{ this = This } = _Invocation, [Port]) ->
 	erlv8_object:new([{port, Port}]).
 
 handle_http(This,Req) ->
-	Emit = This:get_value("emit"),
-	This:call(Emit,["request",self(),req_object(Req),resp_object(Req)]),
+	Notify = This:get_value("notify"),
+	This:call(Notify,[?V8Arr([self(),req_object(Req),resp_object(Req)])]),
 	receive
 		ok ->
 			ok
