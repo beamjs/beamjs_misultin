@@ -8,8 +8,33 @@
 init(_VM) ->
 	ok.
 
-exports(_VM) ->
+exports(VM) ->
+    erlv8_vm:stor(VM, {?MODULE, 'Response'}, prototype_Response()),
 	erlv8_object:new([{"createServer", fun create_server/2}]).
+
+prototype_Response() ->
+    ?V8Obj([
+            {"writeHead", fun (#erlv8_fun_invocation{ this = This } = _Invocation, [Code, Headers]) ->
+                                  Req = This:get_value("request"),
+                                  Req:stream(head, Code, Headers:proplist()),
+                                  undefined
+                          end},
+            {"write", fun (#erlv8_fun_invocation{ this = This } = _Invocation, [String]) ->
+                              Req = This:get_value("request"),
+                              Req:stream(String),
+                              undefined
+                      end},
+            {"end", fun (#erlv8_fun_invocation{ this = This } = _Invocation, [String]) ->
+                            Req = This:get_value("request"),
+                            Req:stream(String),
+                            Req:stream(close),
+                            undefined;
+                        (#erlv8_fun_invocation{ this = This } = _Invocation, []) ->
+                            Req = This:get_value("request"),
+                            Req:stream(close),
+                            undefined
+                    end}
+            ]).
 
 create_server(#erlv8_fun_invocation{ vm = VM} = I, [Fun]) ->
 	Obj = erlv8_vm:taint(VM, erlv8_object:new([{"listen", fun listen/2}])),
@@ -37,7 +62,7 @@ create_server(#erlv8_fun_invocation{ vm = VM} = I, [Fun]) ->
 	Obj:call(AddHandler,[Handler]),
 	Obj.
 
-listen(#erlv8_fun_invocation{ this = This } = _Invocation, [Port]) ->
+listen(#erlv8_fun_invocation{ this = This, vm = VM } = _Invocation, [Port]) ->
 	case lists:keyfind(misultin,1,application:loaded_applications()) of
 		{misultin, _, _} ->
 			ignore;
@@ -45,14 +70,14 @@ listen(#erlv8_fun_invocation{ this = This } = _Invocation, [Port]) ->
 			ok = application:start(misultin)
 	end,
 	spawn(fun () ->
-				  {ok, _Pid} = misultin:start_link([{port, Port}, {loop, fun(Req) -> handle_http(This,Req) end}]),
+				  {ok, _Pid} = misultin:start_link([{port, Port}, {loop, fun(Req) -> handle_http(This,VM,Req) end}]),
 				  receive X -> X end
 		  end),
 	erlv8_object:new([{port, Port}]).
 
-handle_http(This,Req) ->
+handle_http(This,VM,Req) ->
 	Notify = This:get_value("notify"),
-	This:call(Notify,[?V8Arr([self(),req_object(Req),resp_object(Req)])]),
+	This:call(Notify,[?V8Arr([self(),req_object(Req),resp_object(VM, Req)])]),
 	receive
 		ok ->
 			ok
@@ -70,24 +95,10 @@ req_object(Req) ->
 					  {"headers",Req:get(headers)}
 					 ]).
 
-resp_object(Req) ->
-	erlv8_object:new(
-	  [
-	   {"writeHead", fun (#erlv8_fun_invocation{ this = _This } = _Invocation, [Code, Headers]) ->
-							 Req:stream(head, Code, Headers:proplist()),
-							 undefined
-					 end},
-	   {"write", fun (#erlv8_fun_invocation{ this = _This } = _Invocation, [String]) ->
-						 Req:stream(String),
-						 undefined
-				 end},
-	   {"end", fun (#erlv8_fun_invocation{ this = _This } = _Invocation, [String]) ->
-					   Req:stream(String),
-					   Req:stream(close),
-					   undefined;
-				   (#erlv8_fun_invocation{ this = _This } = _Invocation, []) ->
-					   Req:stream(close),
-					   undefined
-			   end}
-	  ]).
+resp_object(VM, Req) ->
+    ResponseProto = erlv8_vm:retr(VM, {?MODULE, 'Response'}),
+    Obj = erlv8_vm:taint(VM, ?V8Obj([])),
+    Obj:set_value("request", erlv8_extern:extern(VM, Req)),
+    Obj:set_prototype(ResponseProto),
+    Obj.
 						   
